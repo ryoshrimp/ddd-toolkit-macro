@@ -2,7 +2,10 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::{Data, DeriveInput, Fields};
 
-use crate::{attributes::parse_vo_attrs, vo::reject_zeroize};
+use crate::{
+    attributes::parse_vo_attrs,
+    vo::{reject_validate, reject_zeroize},
+};
 
 fn rename(pascal: &str, rule: Option<&str>) -> Result<String, String> {
     let snake = || {
@@ -43,6 +46,7 @@ fn rename(pascal: &str, rule: Option<&str>) -> Result<String, String> {
 pub fn expand_enum_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
     let attrs = parse_vo_attrs(input)?;
     reject_zeroize(input, &attrs)?;
+    reject_validate(input, &attrs)?;
     let name = &input.ident;
     let Data::Enum(data) = &input.data else {
         return Err(syn::Error::new_spanned(
@@ -67,6 +71,19 @@ pub fn expand_enum_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
     }
     let type_name = name.to_string();
     let expected = format!("expected one of: {}", strings.join(", "));
+    let display = if attrs.no_display {
+        quote!()
+    } else {
+        quote! {
+            impl ::core::fmt::Display for #name {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.write_str(match self {
+                        #(Self::#idents => #strings,)*
+                    })
+                }
+            }
+        }
+    };
     Ok(quote! {
         impl ddd_toolkit_core::domain::ValueObject for #name {}
 
@@ -76,13 +93,7 @@ pub fn expand_enum_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
             }
         }
 
-        impl ::core::fmt::Display for #name {
-            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                f.write_str(match self {
-                    #(Self::#idents => #strings,)*
-                })
-            }
-        }
+        #display
 
         impl ::core::str::FromStr for #name {
             type Err = ddd_toolkit_core::domain::ValidationError;

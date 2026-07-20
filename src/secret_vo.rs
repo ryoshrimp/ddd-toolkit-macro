@@ -4,7 +4,7 @@ use syn::DeriveInput;
 
 use crate::{
     attributes::parse_vo_attrs,
-    vo::{newtype_inner, validation_parts},
+    vo::{newtype_inner, reject_rename_all, validation_parts},
 };
 
 pub fn expand_secret_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
@@ -15,6 +15,7 @@ pub fn expand_secret_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
             "`no_display` is meaningless on SecretVo (Display is never generated)",
         ));
     }
+    reject_rename_all(input, &attrs)?;
     let inner = newtype_inner(input)?;
     let name = &input.ident;
     let redacted = format!("{name}(***)");

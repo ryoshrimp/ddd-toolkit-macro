@@ -4,12 +4,13 @@ use syn::DeriveInput;
 
 use crate::{
     attributes::parse_vo_attrs,
-    vo::{newtype_inner, newtype_vo_bundle, reject_zeroize},
+    vo::{newtype_inner, newtype_vo_bundle, reject_rename_all, reject_zeroize},
 };
 
 pub fn expand_entity_id(input: &DeriveInput) -> syn::Result<TokenStream2> {
     let attrs = parse_vo_attrs(input)?;
     reject_zeroize(input, &attrs)?;
+    reject_rename_all(input, &attrs)?;
     let inner = newtype_inner(input)?;
     let bundle = newtype_vo_bundle(input, &inner, &attrs);
     let name = &input.ident;

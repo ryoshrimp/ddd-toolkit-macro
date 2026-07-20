@@ -88,9 +88,30 @@ pub fn reject_zeroize(input: &DeriveInput, attrs: &VoAttrs) -> syn::Result<()> {
     Ok(())
 }
 
+pub fn reject_validate(input: &DeriveInput, attrs: &VoAttrs) -> syn::Result<()> {
+    if attrs.validate.is_some() {
+        return Err(syn::Error::new_spanned(
+            &input.ident,
+            "`validate` is not supported on EnumVo (variant membership is already exhaustively checked by FromStr)",
+        ));
+    }
+    Ok(())
+}
+
+pub fn reject_rename_all(input: &DeriveInput, attrs: &VoAttrs) -> syn::Result<()> {
+    if attrs.rename_all.is_some() {
+        return Err(syn::Error::new_spanned(
+            &input.ident,
+            "`rename_all` is only supported on EnumVo (it has no effect on a single-field newtype)",
+        ));
+    }
+    Ok(())
+}
+
 pub fn expand_value_object(input: &DeriveInput) -> syn::Result<TokenStream2> {
     let attrs = parse_vo_attrs(input)?;
     reject_zeroize(input, &attrs)?;
+    reject_rename_all(input, &attrs)?;
     let inner = newtype_inner(input)?;
     Ok(newtype_vo_bundle(input, &inner, &attrs))
 }
