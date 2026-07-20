@@ -37,7 +37,10 @@ pub fn newtype_inner(input: &DeriveInput) -> syn::Result<syn::Type> {
 
 pub fn validation_parts(attrs: &VoAttrs, krate: &TokenStream2) -> (TokenStream2, TokenStream2) {
     match &attrs.validate {
-        Some(path) => (quote!(#krate::domain::ValidationError), quote!(#path(&inner)?;)),
+        Some(path) => (
+            quote!(#krate::domain::ValidationError),
+            quote!(#path(&inner)?;),
+        ),
         None => (quote!(::core::convert::Infallible), quote!()),
     }
 }

@@ -1,5 +1,5 @@
-use proc_macro2::{Span, TokenStream as TokenStream2};
 use proc_macro_crate::{FoundCrate, crate_name};
+use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
 use syn::Ident;
 
