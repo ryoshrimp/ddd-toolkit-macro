@@ -32,6 +32,6 @@ zeroize = ["dep:zeroize"]
 # crate, not here. Any real user of these derives needs ddd-toolkit-core (or
 # the ddd-toolkit facade) as their own dependency regardless; this crate
 # doesn't need to force it on them as a `[dependencies]` entry too.
-ddd-toolkit-core = { git = "ssh://git@github.com/ryoshrimp/ddd-toolkit-core.git", tag = "v0.2.0" }
+ddd-toolkit-core = { git = "https://github.com/ryoshrimp/ddd-toolkit-core.git", tag = "v0.2.0" }
 trybuild = "1"
 zeroize = "1.9.0"
