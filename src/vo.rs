@@ -22,7 +22,7 @@ pub fn newtype_inner(input: &DeriveInput) -> syn::Result<syn::Type> {
 
 pub fn validation_parts(attrs: &VoAttrs) -> (TokenStream2, TokenStream2) {
     match &attrs.validate {
-        Some(path) => (quote!(::ddd_kit::ValidationError), quote!(#path(&inner)?;)),
+        Some(path) => (quote!(ddd_toolkit_core::domain::ValidationError), quote!(#path(&inner)?;)),
         None => (quote!(::core::convert::Infallible), quote!()),
     }
 }
@@ -42,13 +42,13 @@ pub fn newtype_vo_bundle(input: &DeriveInput, inner: &syn::Type, attrs: &VoAttrs
         }
     };
     quote! {
-        impl ::ddd_kit::ValueObject for #name {}
+        impl ddd_toolkit_core::domain::ValueObject for #name {}
 
-        impl ::ddd_kit::WrappedInner for #name {
+        impl ddd_toolkit_core::domain::WrappedInner for #name {
             type Inner = #inner;
         }
 
-        impl ::ddd_kit::Wrapped for #name {
+        impl ddd_toolkit_core::domain::Wrapped for #name {
             fn as_inner(&self) -> &#inner {
                 &self.0
             }

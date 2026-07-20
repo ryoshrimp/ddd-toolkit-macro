@@ -11,3 +11,8 @@ ddd-toolkit-core = { git = "ssh://git@github.com/ryoshrimp/ddd-toolkit-core.git"
 proc-macro2 = "1.0.107"
 quote = "1.0.47"
 syn = "3.0.1"
+zeroize = { version = "1.9.0", optional = true }
+
+
+[features]
+zeroize = ["dep:zeroize"]

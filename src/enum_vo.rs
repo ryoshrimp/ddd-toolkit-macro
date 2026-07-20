@@ -68,9 +68,9 @@ pub fn expand_enum_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
     let type_name = name.to_string();
     let expected = format!("expected one of: {}", strings.join(", "));
     Ok(quote! {
-        impl ::ddd_kit::ValueObject for #name {}
+        impl ddd_toolkit_core::domain::ValueObject for #name {}
 
-        impl ::ddd_kit::EnumVo for #name {
+        impl ddd_toolkit_core::domain::EnumVo for #name {
             fn variants() -> &'static [Self] {
                 &[#(Self::#idents),*]
             }
@@ -85,13 +85,13 @@ pub fn expand_enum_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
         }
 
         impl ::core::str::FromStr for #name {
-            type Err = ::ddd_kit::ValidationError;
+            type Err = ddd_toolkit_core::domain::ValidationError;
 
             fn from_str(s: &str) -> ::core::result::Result<Self, Self::Err> {
                 match s {
                     #(#strings => ::core::result::Result::Ok(Self::#idents),)*
                     _ => ::core::result::Result::Err(
-                        ::ddd_kit::ValidationError::new(#type_name, #expected),
+                        ddd_toolkit_core::domain::ValidationError::new(#type_name, #expected),
                     ),
                 }
             }

@@ -24,7 +24,7 @@ pub fn expand_secret_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
         quote! {
             impl ::core::ops::Drop for #name {
                 fn drop(&mut self) {
-                    ::ddd_kit::zeroize::Zeroize::zeroize(&mut self.0);
+                    zeroize::Zeroize::zeroize(&mut self.0);
                 }
             }
         }
@@ -34,7 +34,7 @@ pub fn expand_secret_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
     Ok(quote! {
         #drop_impl
 
-        impl ::ddd_kit::ValueObject for #name {}
+        impl ddd_toolkit_core::domain::ValueObject for #name {}
 
         impl ::core::fmt::Debug for #name {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
@@ -42,7 +42,7 @@ pub fn expand_secret_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
             }
         }
 
-        impl ::ddd_kit::SecretVo for #name {
+        impl ddd_toolkit_core::domain::SecretVo for #name {
             type Inner = #inner;
             type Error = #error_ty;
 
@@ -61,7 +61,7 @@ pub fn expand_secret_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
             type Error = #error_ty;
 
             fn try_from(inner: #inner) -> ::core::result::Result<Self, Self::Error> {
-                <Self as ::ddd_kit::SecretVo>::try_new(inner)
+                <Self as ddd_toolkit_core::domain::SecretVo>::try_new(inner)
             }
         }
     })

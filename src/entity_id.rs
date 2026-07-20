@@ -36,6 +36,6 @@ pub fn expand_entity_id(input: &DeriveInput) -> syn::Result<TokenStream2> {
             }
         }
 
-        impl ::ddd_kit::EntityId for #name {}
+        impl ddd_toolkit_core::domain::EntityId for #name {}
     })
 }
