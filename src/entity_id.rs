@@ -4,6 +4,7 @@ use syn::DeriveInput;
 
 use crate::{
     attributes::parse_vo_attrs,
+    krate::core_crate_path,
     vo::{newtype_inner, newtype_vo_bundle, reject_rename_all, reject_zeroize},
 };
 
@@ -12,7 +13,8 @@ pub fn expand_entity_id(input: &DeriveInput) -> syn::Result<TokenStream2> {
     reject_zeroize(input, &attrs)?;
     reject_rename_all(input, &attrs)?;
     let inner = newtype_inner(input)?;
-    let bundle = newtype_vo_bundle(input, &inner, &attrs);
+    let krate = core_crate_path();
+    let bundle = newtype_vo_bundle(input, &inner, &attrs, &krate);
     let name = &input.ident;
     Ok(quote! {
         #bundle
@@ -37,6 +39,6 @@ pub fn expand_entity_id(input: &DeriveInput) -> syn::Result<TokenStream2> {
             }
         }
 
-        impl ddd_toolkit_core::domain::EntityId for #name {}
+        impl #krate::domain::EntityId for #name {}
     })
 }

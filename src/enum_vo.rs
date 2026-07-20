@@ -4,6 +4,7 @@ use syn::{Data, DeriveInput, Fields};
 
 use crate::{
     attributes::parse_vo_attrs,
+    krate::core_crate_path,
     vo::{reject_validate, reject_zeroize},
 };
 
@@ -69,6 +70,7 @@ pub fn expand_enum_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
         );
         idents.push(&variant.ident);
     }
+    let krate = core_crate_path();
     let type_name = name.to_string();
     let expected = format!("expected one of: {}", strings.join(", "));
     let display = if attrs.no_display {
@@ -85,9 +87,9 @@ pub fn expand_enum_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
         }
     };
     Ok(quote! {
-        impl ddd_toolkit_core::domain::ValueObject for #name {}
+        impl #krate::domain::ValueObject for #name {}
 
-        impl ddd_toolkit_core::domain::EnumVo for #name {
+        impl #krate::domain::EnumVo for #name {
             fn variants() -> &'static [Self] {
                 &[#(Self::#idents),*]
             }
@@ -96,13 +98,13 @@ pub fn expand_enum_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
         #display
 
         impl ::core::str::FromStr for #name {
-            type Err = ddd_toolkit_core::domain::ValidationError;
+            type Err = #krate::domain::ValidationError;
 
             fn from_str(s: &str) -> ::core::result::Result<Self, Self::Err> {
                 match s {
                     #(#strings => ::core::result::Result::Ok(Self::#idents),)*
                     _ => ::core::result::Result::Err(
-                        ddd_toolkit_core::domain::ValidationError::new(#type_name, #expected),
+                        #krate::domain::ValidationError::new(#type_name, #expected),
                     ),
                 }
             }

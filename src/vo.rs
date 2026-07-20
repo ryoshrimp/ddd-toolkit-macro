@@ -2,7 +2,10 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::{Data, DeriveInput, Fields};
 
-use crate::attributes::{VoAttrs, parse_vo_attrs};
+use crate::{
+    attributes::{VoAttrs, parse_vo_attrs},
+    krate::core_crate_path,
+};
 
 pub fn newtype_inner(input: &DeriveInput) -> syn::Result<syn::Type> {
     let err = || {
@@ -32,16 +35,21 @@ pub fn newtype_inner(input: &DeriveInput) -> syn::Result<syn::Type> {
     }
 }
 
-pub fn validation_parts(attrs: &VoAttrs) -> (TokenStream2, TokenStream2) {
+pub fn validation_parts(attrs: &VoAttrs, krate: &TokenStream2) -> (TokenStream2, TokenStream2) {
     match &attrs.validate {
-        Some(path) => (quote!(ddd_toolkit_core::domain::ValidationError), quote!(#path(&inner)?;)),
+        Some(path) => (quote!(#krate::domain::ValidationError), quote!(#path(&inner)?;)),
         None => (quote!(::core::convert::Infallible), quote!()),
     }
 }
 
-pub fn newtype_vo_bundle(input: &DeriveInput, inner: &syn::Type, attrs: &VoAttrs) -> TokenStream2 {
+pub fn newtype_vo_bundle(
+    input: &DeriveInput,
+    inner: &syn::Type,
+    attrs: &VoAttrs,
+    krate: &TokenStream2,
+) -> TokenStream2 {
     let name = &input.ident;
-    let (error_ty, validate_call) = validation_parts(attrs);
+    let (error_ty, validate_call) = validation_parts(attrs, krate);
     let display = if attrs.no_display {
         quote!()
     } else {
@@ -54,13 +62,13 @@ pub fn newtype_vo_bundle(input: &DeriveInput, inner: &syn::Type, attrs: &VoAttrs
         }
     };
     quote! {
-        impl ddd_toolkit_core::domain::ValueObject for #name {}
+        impl #krate::domain::ValueObject for #name {}
 
-        impl ddd_toolkit_core::domain::WrappedInner for #name {
+        impl #krate::domain::WrappedInner for #name {
             type Inner = #inner;
         }
 
-        impl ddd_toolkit_core::domain::Wrapped for #name {
+        impl #krate::domain::Wrapped for #name {
             fn as_inner(&self) -> &#inner {
                 &self.0
             }
@@ -125,7 +133,8 @@ pub fn expand_value_object(input: &DeriveInput) -> syn::Result<TokenStream2> {
     reject_zeroize(input, &attrs)?;
     reject_rename_all(input, &attrs)?;
     let inner = newtype_inner(input)?;
-    Ok(newtype_vo_bundle(input, &inner, &attrs))
+    let krate = core_crate_path();
+    Ok(newtype_vo_bundle(input, &inner, &attrs, &krate))
 }
 
 #[cfg(test)]
@@ -166,7 +175,8 @@ mod test {
     #[test]
     fn validation_parts_without_validate_returns_infallible_and_empty_call() {
         let attrs = VoAttrs::default();
-        let (error_ty, call) = validation_parts(&attrs);
+        let krate = quote!(::ddd_toolkit_core);
+        let (error_ty, call) = validation_parts(&attrs, &krate);
         assert_eq!(
             error_ty.to_string(),
             quote!(::core::convert::Infallible).to_string()
@@ -181,10 +191,11 @@ mod test {
             validate: Some(path),
             ..Default::default()
         };
-        let (error_ty, call) = validation_parts(&attrs);
+        let krate = quote!(::ddd_toolkit_core);
+        let (error_ty, call) = validation_parts(&attrs, &krate);
         assert_eq!(
             error_ty.to_string(),
-            quote!(ddd_toolkit_core::domain::ValidationError).to_string()
+            quote!(::ddd_toolkit_core::domain::ValidationError).to_string()
         );
         assert_eq!(
             call.to_string(),

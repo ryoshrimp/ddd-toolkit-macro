@@ -1,6 +1,7 @@
 mod attributes;
 mod entity_id;
 mod enum_vo;
+mod krate;
 mod secret_vo;
 mod vo;
 

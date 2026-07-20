@@ -8,6 +8,7 @@ proc-macro = true
 
 [dependencies]
 ddd-toolkit-core = { git = "ssh://git@github.com/ryoshrimp/ddd-toolkit-core.git", tag = "v0.2.0" }
+proc-macro-crate = "3.5.0"
 proc-macro2 = "1.0.107"
 quote = "1.0.47"
 syn = "3.0.1"
