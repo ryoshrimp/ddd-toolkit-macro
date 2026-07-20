@@ -41,6 +41,3 @@ pub fn derive_enum_vo(input: TokenStream) -> TokenStream {
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
-
-#[cfg(feature = "zeroize")]
-pub use zeroize;
