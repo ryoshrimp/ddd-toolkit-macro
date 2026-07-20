@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-07-20
+
+### Added
+
+- Crates.io metadata (`license`, `description`, `repository`, `documentation`,
+  `readme`, `keywords`, `categories`), `LICENSE-MIT`/`LICENSE-APACHE`, and a
+  `README.md` documenting every derive and `#[vo(...)]` attribute, in
+  preparation for the first crates.io release.
+- Crate-level and per-derive docs closing every `missing_docs` gap on the
+  public API surface.
+- `[package.metadata.docs.rs] all-features = true` so docs.rs renders the
+  `zeroize`-gated derive support instead of just the default build.
+- CI: a GitHub Actions workflow testing with default and `--features
+  zeroize`, `cargo fmt --check`, and `cargo clippy -D warnings`.
+
+### Fixed
+
+- The `ddd-toolkit-core` git dev-dependency now uses HTTPS instead of SSH, so
+  CI (and anyone building this crate's own tests without an SSH key) can
+  fetch it.
+
+### Changed
+
+- Moved the `ddd-toolkit-core` dependency from `[dependencies]` to
+  `[dev-dependencies]`: nothing in `src/` needs it compiled in (the derives
+  only reference it via generated token paths resolved in the *calling*
+  crate). This also means this crate no longer needs a `version` alongside
+  its `git` dependency to pass `cargo publish`, and can be published
+  independently of `ddd-toolkit-core`'s publish status.
+- The `ddd-toolkit-core` dev-dependency now pins tag `v0.2.1` (previously
+  `v0.2.0`), matching its currently published version. Dev-only; doesn't
+  affect the published package.
+- Pinned `rust-version = "1.85"` (this crate's edition 2024 floor) and
+  excluded the `.github` workflow from the published package.
+
 ## [0.2.1] - 2026-07-20
 
 ### Fixed
@@ -19,27 +54,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   resolves, per macro invocation, whether the calling crate depends on
   `ddd-toolkit-core` directly or only through the facade, and emits the
   matching path.
-- The `ddd-toolkit-core` git dev-dependency now uses HTTPS instead of SSH, so
-  CI (and anyone building this crate's own tests without an SSH key) can
-  fetch it.
-
-### Added
-
-- Crates.io metadata (`license`, `description`, `repository`, `documentation`,
-  `readme`, `keywords`, `categories`), `LICENSE-MIT`/`LICENSE-APACHE`, and a
-  `README.md` documenting every derive and `#[vo(...)]` attribute, in
-  preparation for the first crates.io release.
-- Crate-level and per-derive docs closing every `missing_docs` gap on the
-  public API surface.
-
-### Changed
-
-- Moved the `ddd-toolkit-core` dependency from `[dependencies]` to
-  `[dev-dependencies]`: nothing in `src/` needs it compiled in (the derives
-  only reference it via generated token paths resolved in the *calling*
-  crate). This also means this crate no longer needs a `version` alongside
-  its `git` dependency to pass `cargo publish`, and can be published
-  independently of `ddd-toolkit-core`'s publish status.
 
 ## [0.2.0] - 2026-07-20
 
@@ -78,7 +92,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   membership is already exhaustive) and properly supports `no_display`; the
   other three macros now reject `rename_all`.
 
-[Unreleased]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ryoshrimp/ddd-toolkit-macro/releases/tag/v0.1.0
