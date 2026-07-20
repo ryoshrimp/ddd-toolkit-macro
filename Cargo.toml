@@ -2,6 +2,7 @@
 name = "ddd-toolkit-macro"
 version = "0.2.1"
 edition = "2024"
+rust-version = "1.85"
 license = "MIT OR Apache-2.0"
 description = "Derive macros for ddd-toolkit-core's ValueObject, EntityId, SecretVo, and EnumVo traits."
 repository = "https://github.com/ryoshrimp/ddd-toolkit-macro"
@@ -9,6 +10,10 @@ documentation = "https://docs.rs/ddd-toolkit-macro"
 readme = "README.md"
 keywords = ["ddd", "domain-driven-design", "derive", "macro", "value-object"]
 categories = ["development-tools::procedural-macro-helpers", "rust-patterns"]
+exclude = [".github"]
+
+[package.metadata.docs.rs]
+all-features = true
 
 [lib]
 proc-macro = true
