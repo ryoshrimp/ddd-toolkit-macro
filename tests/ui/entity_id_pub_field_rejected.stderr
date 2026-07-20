@@ -1,0 +1,5 @@
+error: the wrapped field must not be `pub`: a public field lets external code construct this type directly (e.g. `Email("anything".into())`), bypassing the validation this derive generates in `TryFrom`. Make the field private (or `pub(crate)`) instead.
+ --> tests/ui/entity_id_pub_field_rejected.rs:2:14
+  |
+2 | struct FooId(pub String);
+  |              ^^^^^^^^^^

@@ -13,7 +13,19 @@ pub fn newtype_inner(input: &DeriveInput) -> syn::Result<syn::Type> {
     };
     match &input.data {
         Data::Struct(s) => match &s.fields {
-            Fields::Unnamed(f) if f.unnamed.len() == 1 => Ok(f.unnamed.first().unwrap().ty.clone()),
+            Fields::Unnamed(f) if f.unnamed.len() == 1 => {
+                let field = f.unnamed.first().unwrap();
+                if matches!(field.vis, syn::Visibility::Public(_)) {
+                    return Err(syn::Error::new_spanned(
+                        field,
+                        "the wrapped field must not be `pub`: a public field lets external \
+                         code construct this type directly (e.g. `Email(\"anything\".into())`), \
+                         bypassing the validation this derive generates in `TryFrom`. Make the \
+                         field private (or `pub(crate)`) instead.",
+                    ));
+                }
+                Ok(field.ty.clone())
+            }
             _ => Err(err()),
         },
         _ => Err(err()),
