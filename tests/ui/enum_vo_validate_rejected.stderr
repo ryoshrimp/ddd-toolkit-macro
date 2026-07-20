@@ -1,0 +1,5 @@
+error: `validate` is not supported on EnumVo (variant membership is already exhaustively checked by FromStr)
+ --> tests/ui/enum_vo_validate_rejected.rs:7:6
+  |
+7 | enum Foo {
+  |      ^^^

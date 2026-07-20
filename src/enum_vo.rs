@@ -109,3 +109,98 @@ pub fn expand_enum_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
         }
     })
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn rename_none_rule_returns_pascal_case_unchanged() {
+        assert_eq!(rename("FooBar", None), Ok("FooBar".to_string()));
+    }
+
+    #[test]
+    fn rename_pascal_case_rule_returns_unchanged() {
+        assert_eq!(
+            rename("FooBar", Some("PascalCase")),
+            Ok("FooBar".to_string())
+        );
+    }
+
+    #[test]
+    fn rename_snake_case_rule_converts_pascal_to_snake() {
+        assert_eq!(
+            rename("FooBar", Some("snake_case")),
+            Ok("foo_bar".to_string())
+        );
+    }
+
+    #[test]
+    fn rename_screaming_snake_case_rule_converts_to_upper_snake() {
+        assert_eq!(
+            rename("FooBar", Some("SCREAMING_SNAKE_CASE")),
+            Ok("FOO_BAR".to_string())
+        );
+    }
+
+    #[test]
+    fn rename_kebab_case_rule_converts_to_kebab() {
+        assert_eq!(
+            rename("FooBar", Some("kebab-case")),
+            Ok("foo-bar".to_string())
+        );
+    }
+
+    #[test]
+    fn rename_lowercase_rule_converts_without_separators() {
+        assert_eq!(
+            rename("FooBar", Some("lowercase")),
+            Ok("foobar".to_string())
+        );
+    }
+
+    #[test]
+    fn rename_uppercase_rule_converts_without_separators() {
+        assert_eq!(
+            rename("FooBar", Some("UPPERCASE")),
+            Ok("FOOBAR".to_string())
+        );
+    }
+
+    #[test]
+    fn rename_camel_case_rule_lowercases_first_letter_only() {
+        assert_eq!(
+            rename("FooBar", Some("camelCase")),
+            Ok("fooBar".to_string())
+        );
+    }
+
+    #[test]
+    fn rename_unknown_rule_returns_err_listing_valid_options() {
+        let err = rename("FooBar", Some("Bogus")).unwrap_err();
+        for expected in [
+            "PascalCase",
+            "snake_case",
+            "SCREAMING_SNAKE_CASE",
+            "kebab-case",
+            "lowercase",
+            "UPPERCASE",
+            "camelCase",
+        ] {
+            assert!(err.contains(expected), "missing `{expected}` in: {err}");
+        }
+    }
+
+    #[test]
+    fn rename_single_char_variant_snake_case_has_no_leading_underscore() {
+        assert_eq!(rename("A", Some("snake_case")), Ok("a".to_string()));
+    }
+
+    #[test]
+    fn rename_consecutive_uppercase_snake_case_inserts_underscore_between_each() {
+        assert_eq!(
+            rename("HTTPServer", Some("snake_case")),
+            Ok("h_t_t_p_server".to_string())
+        );
+    }
+}

@@ -115,3 +115,135 @@ pub fn expand_value_object(input: &DeriveInput) -> syn::Result<TokenStream2> {
     let inner = newtype_inner(input)?;
     Ok(newtype_vo_bundle(input, &inner, &attrs))
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn newtype_inner_single_field_tuple_struct_returns_inner_type() {
+        let input: DeriveInput = syn::parse_str("struct Foo(String);").unwrap();
+        let ty = newtype_inner(&input).unwrap();
+        assert_eq!(quote!(#ty).to_string(), quote!(String).to_string());
+    }
+
+    #[test]
+    fn newtype_inner_named_field_struct_returns_err() {
+        let input: DeriveInput = syn::parse_str("struct Foo { bar: String }").unwrap();
+        assert!(newtype_inner(&input).is_err());
+    }
+
+    #[test]
+    fn newtype_inner_multi_field_tuple_struct_returns_err() {
+        let input: DeriveInput = syn::parse_str("struct Foo(String, i32);").unwrap();
+        assert!(newtype_inner(&input).is_err());
+    }
+
+    #[test]
+    fn newtype_inner_enum_returns_err() {
+        let input: DeriveInput = syn::parse_str("enum Foo { A, B }").unwrap();
+        assert!(newtype_inner(&input).is_err());
+    }
+
+    #[test]
+    fn newtype_inner_zero_field_tuple_struct_returns_err() {
+        let input: DeriveInput = syn::parse_str("struct Foo();").unwrap();
+        assert!(newtype_inner(&input).is_err());
+    }
+
+    #[test]
+    fn validation_parts_without_validate_returns_infallible_and_empty_call() {
+        let attrs = VoAttrs::default();
+        let (error_ty, call) = validation_parts(&attrs);
+        assert_eq!(
+            error_ty.to_string(),
+            quote!(::core::convert::Infallible).to_string()
+        );
+        assert!(call.is_empty());
+    }
+
+    #[test]
+    fn validation_parts_with_validate_returns_validation_error_and_call_tokens() {
+        let path: syn::Path = syn::parse_str("my_mod::check").unwrap();
+        let attrs = VoAttrs {
+            validate: Some(path),
+            ..Default::default()
+        };
+        let (error_ty, call) = validation_parts(&attrs);
+        assert_eq!(
+            error_ty.to_string(),
+            quote!(ddd_toolkit_core::domain::ValidationError).to_string()
+        );
+        assert_eq!(
+            call.to_string(),
+            quote!(my_mod::check(&inner)?;).to_string()
+        );
+    }
+
+    #[test]
+    fn reject_zeroize_without_flag_returns_ok() {
+        let input: DeriveInput = syn::parse_str("struct Foo(String);").unwrap();
+        assert!(reject_zeroize(&input, &VoAttrs::default()).is_ok());
+    }
+
+    #[test]
+    fn reject_zeroize_with_flag_returns_err_with_expected_message() {
+        let input: DeriveInput = syn::parse_str("struct Foo(String);").unwrap();
+        let attrs = VoAttrs {
+            zeroize: true,
+            ..Default::default()
+        };
+        match reject_zeroize(&input, &attrs) {
+            Err(err) => assert_eq!(
+                err.to_string(),
+                "`zeroize` is only supported on `#[derive(SecretVo)]`"
+            ),
+            Ok(()) => panic!("expected reject_zeroize to reject a struct with `zeroize` set"),
+        }
+    }
+
+    #[test]
+    fn reject_validate_without_value_returns_ok() {
+        let input: DeriveInput = syn::parse_str("struct Foo(String);").unwrap();
+        assert!(reject_validate(&input, &VoAttrs::default()).is_ok());
+    }
+
+    #[test]
+    fn reject_validate_with_value_returns_err_with_expected_message() {
+        let input: DeriveInput = syn::parse_str("struct Foo(String);").unwrap();
+        let path: syn::Path = syn::parse_str("my_mod::check").unwrap();
+        let attrs = VoAttrs {
+            validate: Some(path),
+            ..Default::default()
+        };
+        match reject_validate(&input, &attrs) {
+            Err(err) => assert_eq!(
+                err.to_string(),
+                "`validate` is not supported on EnumVo (variant membership is already exhaustively checked by FromStr)"
+            ),
+            Ok(()) => panic!("expected reject_validate to reject a struct with `validate` set"),
+        }
+    }
+
+    #[test]
+    fn reject_rename_all_without_value_returns_ok() {
+        let input: DeriveInput = syn::parse_str("struct Foo(String);").unwrap();
+        assert!(reject_rename_all(&input, &VoAttrs::default()).is_ok());
+    }
+
+    #[test]
+    fn reject_rename_all_with_value_returns_err_with_expected_message() {
+        let input: DeriveInput = syn::parse_str("struct Foo(String);").unwrap();
+        let attrs = VoAttrs {
+            rename_all: Some("snake_case".to_string()),
+            ..Default::default()
+        };
+        match reject_rename_all(&input, &attrs) {
+            Err(err) => assert_eq!(
+                err.to_string(),
+                "`rename_all` is only supported on EnumVo (it has no effect on a single-field newtype)"
+            ),
+            Ok(()) => panic!("expected reject_rename_all to reject a struct with `rename_all` set"),
+        }
+    }
+}

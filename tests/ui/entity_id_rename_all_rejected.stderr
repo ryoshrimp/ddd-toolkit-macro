@@ -1,0 +1,5 @@
+error: `rename_all` is only supported on EnumVo (it has no effect on a single-field newtype)
+ --> tests/ui/entity_id_rename_all_rejected.rs:3:8
+  |
+3 | struct FooId(String);
+  |        ^^^^^

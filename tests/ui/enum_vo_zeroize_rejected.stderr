@@ -1,0 +1,5 @@
+error: `zeroize` is only supported on `#[derive(SecretVo)]`
+ --> tests/ui/enum_vo_zeroize_rejected.rs:3:6
+  |
+3 | enum Foo {
+  |      ^^^
