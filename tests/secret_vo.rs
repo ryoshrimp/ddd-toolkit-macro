@@ -47,10 +47,16 @@ fn validate_attribute_rejects_invalid_input() {
     );
 }
 
+// `#[vo(zeroize)]` is only accepted when this crate's own `zeroize` Cargo
+// feature is enabled (run `cargo test --features zeroize` to exercise it) -
+// without it, the attribute is rejected at derive time with a message
+// pointing at the required feature and dependency.
+#[cfg(feature = "zeroize")]
 #[derive(Clone, PartialEq, DeriveSecretVo)]
 #[vo(zeroize)]
 struct ZeroizingSecret([u8; 4]);
 
+#[cfg(feature = "zeroize")]
 #[test]
 fn zeroize_attribute_generates_working_drop_impl() {
     // Safe tests can't observe post-drop memory, so this only proves the
