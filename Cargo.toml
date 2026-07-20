@@ -2,12 +2,18 @@
 name = "ddd-toolkit-macro"
 version = "0.2.1"
 edition = "2024"
+license = "MIT OR Apache-2.0"
+description = "Derive macros for ddd-toolkit-core's ValueObject, EntityId, SecretVo, and EnumVo traits."
+repository = "https://github.com/ryoshrimp/ddd-toolkit-macro"
+documentation = "https://docs.rs/ddd-toolkit-macro"
+readme = "README.md"
+keywords = ["ddd", "domain-driven-design", "derive", "macro", "value-object"]
+categories = ["development-tools::procedural-macro-helpers", "rust-patterns"]
 
 [lib]
 proc-macro = true
 
 [dependencies]
-ddd-toolkit-core = { git = "ssh://git@github.com/ryoshrimp/ddd-toolkit-core.git", tag = "v0.2.0" }
 proc-macro-crate = "3.5.0"
 proc-macro2 = "1.0.107"
 quote = "1.0.47"
@@ -19,5 +25,13 @@ zeroize = { version = "1.9.0", optional = true }
 zeroize = ["dep:zeroize"]
 
 [dev-dependencies]
+# Only used by this crate's own tests/*.rs (real usages of the generated
+# code, exercising the ValueObject/EntityId/SecretVo/EnumVo traits). Nothing
+# in src/ needs ddd-toolkit-core compiled in - the derives only reference it
+# via generated token paths (see src/krate.rs), resolved in the *calling*
+# crate, not here. Any real user of these derives needs ddd-toolkit-core (or
+# the ddd-toolkit facade) as their own dependency regardless; this crate
+# doesn't need to force it on them as a `[dependencies]` entry too.
+ddd-toolkit-core = { git = "ssh://git@github.com/ryoshrimp/ddd-toolkit-core.git", tag = "v0.2.0" }
 trybuild = "1"
 zeroize = "1.9.0"
