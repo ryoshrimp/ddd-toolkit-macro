@@ -78,8 +78,6 @@ pub fn newtype_vo_bundle(input: &DeriveInput, inner: &syn::Type, attrs: &VoAttrs
     }
 }
 
-
-
 pub fn reject_zeroize(input: &DeriveInput, attrs: &VoAttrs) -> syn::Result<()> {
     if attrs.zeroize {
         return Err(syn::Error::new_spanned(
