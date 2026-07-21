@@ -39,7 +39,7 @@ serde = ["dep:serde"]
 # crate, not here. Any real user of these derives needs ddd-toolkit-core (or
 # the ddd-toolkit facade) as their own dependency regardless; this crate
 # doesn't need to force it on them as a `[dependencies]` entry too.
-ddd-toolkit-core = "0.2.2"
+ddd-toolkit-core = "0.3.0"
 trybuild = "1"
 zeroize = "1.9.0"
 serde = "1"
