@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-07-21
+
+### Added
+
+- Full rustdoc for all four `proc_macro_derive` functions: compile-time
+  requirements, accepted `#[vo(...)]` attributes (and why others are
+  rejected), and runnable `Examples` exercised as doctests. Crate root
+  `#![deny(missing_docs)]` locks the now fully-covered public surface
+  against regressions.
+- README: badges, an Installation section, an `EntityId` usage example, and
+  a Changelog pointer, mirroring `ddd-toolkit-core`'s README structure.
+
+### Changed
+
+- The `ddd-toolkit-core` dev-dependency now points at the published v0.2.2
+  crates.io release instead of a git tag. Dev-only; doesn't affect the
+  published package.
+
 ## [0.2.2] - 2026-07-20
 
 ### Added
@@ -92,7 +110,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   membership is already exhaustive) and properly supports `no_display`; the
   other three macros now reject `rename_all`.
 
-[Unreleased]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.1.0...v0.2.0
