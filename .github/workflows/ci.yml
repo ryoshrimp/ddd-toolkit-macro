@@ -17,6 +17,8 @@ jobs:
         features:
           - ""
           - --features zeroize
+          - --features serde
+          - --features zeroize,serde
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -40,7 +42,7 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --all-targets --features zeroize -- -D warnings
+      - run: cargo clippy --all-targets --features zeroize,serde -- -D warnings
 
   coverage:
     runs-on: ubuntu-latest
@@ -51,7 +53,7 @@ jobs:
           components: llvm-tools-preview
       - uses: taiki-e/install-action@cargo-llvm-cov
       - uses: Swatinem/rust-cache@v2
-      - run: cargo llvm-cov --features zeroize --lcov --output-path lcov.info
+      - run: cargo llvm-cov --features zeroize,serde --lcov --output-path lcov.info
       - uses: codecov/codecov-action@v4
         with:
           files: lcov.info

@@ -24,10 +24,12 @@ proc-macro2 = "1.0.107"
 quote = "1.0.47"
 syn = "3.0.1"
 zeroize = { version = "1.9.0", optional = true }
+serde = { version = "1", optional = true }
 
 
 [features]
 zeroize = ["dep:zeroize"]
+serde = ["dep:serde"]
 
 [dev-dependencies]
 # Only used by this crate's own tests/*.rs (real usages of the generated
@@ -40,3 +42,5 @@ zeroize = ["dep:zeroize"]
 ddd-toolkit-core = "0.2.2"
 trybuild = "1"
 zeroize = "1.9.0"
+serde = "1"
+serde_json = "1"

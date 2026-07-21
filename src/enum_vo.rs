@@ -44,6 +44,41 @@ fn rename(pascal: &str, rule: Option<&str>) -> Result<String, String> {
     }
 }
 
+// Same rationale as `vo::serde_bundle`: gated on this crate's own `serde`
+// Cargo feature, generates a transparent `Serialize`/`Deserialize` pair
+// using the same variant/string table `Display`/`FromStr` are built from,
+// so it can't drift out of sync with either.
+#[cfg(feature = "serde")]
+fn serde_bundle(name: &syn::Ident, idents: &[&syn::Ident], strings: &[String]) -> TokenStream2 {
+    quote! {
+        impl ::serde::Serialize for #name {
+            fn serialize<S>(&self, serializer: S) -> ::core::result::Result<S::Ok, S::Error>
+            where
+                S: ::serde::Serializer,
+            {
+                serializer.serialize_str(match self {
+                    #(Self::#idents => #strings,)*
+                })
+            }
+        }
+
+        impl<'de> ::serde::Deserialize<'de> for #name {
+            fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
+            where
+                D: ::serde::Deserializer<'de>,
+            {
+                let s = <::std::string::String as ::serde::Deserialize>::deserialize(deserializer)?;
+                <Self as ::core::str::FromStr>::from_str(&s).map_err(::serde::de::Error::custom)
+            }
+        }
+    }
+}
+
+#[cfg(not(feature = "serde"))]
+fn serde_bundle(_name: &syn::Ident, _idents: &[&syn::Ident], _strings: &[String]) -> TokenStream2 {
+    quote!()
+}
+
 pub fn expand_enum_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
     let attrs = parse_vo_attrs(input)?;
     reject_zeroize(input, &attrs)?;
@@ -73,6 +108,7 @@ pub fn expand_enum_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
     let krate = core_crate_path();
     let type_name = name.to_string();
     let expected = format!("expected one of: {}", strings.join(", "));
+    let serde_impl = serde_bundle(name, &idents, &strings);
     let display = if attrs.no_display {
         quote!()
     } else {
@@ -109,6 +145,8 @@ pub fn expand_enum_vo(input: &DeriveInput) -> syn::Result<TokenStream2> {
                 }
             }
         }
+
+        #serde_impl
     })
 }
 

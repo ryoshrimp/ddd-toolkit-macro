@@ -22,9 +22,10 @@ Before opening a PR, run the same checks CI runs (see
 ```sh
 cargo test
 cargo test --features zeroize
+cargo test --features serde
 
 cargo fmt --check
-cargo clippy --all-targets --features zeroize -- -D warnings
+cargo clippy --all-targets --features zeroize,serde -- -D warnings
 ```
 
 ## Submitting changes

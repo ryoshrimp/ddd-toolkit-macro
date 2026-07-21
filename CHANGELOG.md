@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `serde` feature: `#[derive(ValueObject)]`/`#[derive(EntityId)]`/
+  `#[derive(EnumVo)]` gain `Serialize`/`Deserialize`. Wrapped types
+  serialize as their inner value and re-run the inner value through
+  `TryFrom` on deserialize, so an invalid value is rejected the same way
+  either path constructs one; `EnumVo` serializes as its `Display`/
+  `FromStr` string form. `SecretVo` is intentionally excluded (a
+  `Serialize` impl on a secret defeats the point of the type).
+
 ## [0.2.4] - 2026-07-21
 
 ### Added
