@@ -81,6 +81,16 @@ use syn::{DeriveInput, parse_macro_input};
 /// sense on [`SecretVo`](derive_secret_vo), which owns a value worth
 /// scrubbing from memory on drop.
 ///
+/// # `serde`
+///
+/// With this crate's own `serde` Cargo feature enabled (and the calling
+/// crate depending on `serde` directly - proc-macro output resolves bare
+/// paths at the call site, not here), this also derives `Serialize`
+/// (delegating to the inner value) and `Deserialize` (deserializing the
+/// inner value, then re-running it through the same validating `TryFrom`
+/// this derive generates, so an invalid value is rejected during
+/// deserialization exactly as it would be through `TryFrom` directly).
+///
 /// # Examples
 ///
 /// ```
@@ -128,7 +138,8 @@ pub fn derive_value_object(input: TokenStream) -> TokenStream {
 /// See [`derive_value_object`] for the shared requirements (single-field
 /// tuple struct, non-`pub` field) and `#[vo(...)]` attributes (`validate`,
 /// `no_display`) - both apply here unchanged, and `rename_all`/`zeroize`
-/// are rejected for the same reasons.
+/// are rejected for the same reasons. `serde` support (see
+/// [`derive_value_object`]'s docs) applies here unchanged too.
 ///
 /// # Examples
 ///
@@ -183,6 +194,14 @@ pub fn derive_entity_id(input: TokenStream) -> TokenStream {
 ///   site). Without the feature enabled, `#[vo(zeroize)]` is rejected at
 ///   compile time with a message naming both requirements, rather than
 ///   failing later with a confusing unresolved-crate error.
+///
+/// Unlike [`ValueObject`](derive_value_object)/[`EntityId`](derive_entity_id)/
+/// [`EnumVo`](derive_enum_vo), this derive never generates `serde` support,
+/// even with this crate's `serde` Cargo feature enabled: a `Serialize` impl
+/// on a secret risks writing the raw value to a log or response body by
+/// accident, which is exactly what this type exists to prevent. Wrap a
+/// `SecretVo` in your own type with an explicit, intentional `Serialize`
+/// impl if you truly need to send it somewhere.
 ///
 /// # Examples
 ///
@@ -250,6 +269,13 @@ pub fn derive_secret_vo(input: TokenStream) -> TokenStream {
 ///   `SCREAMING_SNAKE_CASE`, `kebab-case`, `lowercase`, `UPPERCASE`, or
 ///   `camelCase`. An unrecognized rule name is rejected at compile time,
 ///   listing the valid options.
+///
+/// With this crate's own `serde` Cargo feature enabled (and the calling
+/// crate depending on `serde` directly), this also derives `Serialize`
+/// and `Deserialize`, both using the same variant/string table
+/// `Display`/`FromStr` are generated from - so serializing writes the
+/// `Display` string and deserializing accepts exactly what `FromStr`
+/// accepts, `rename_all` included.
 ///
 /// # Examples
 ///

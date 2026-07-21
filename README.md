@@ -38,6 +38,15 @@ ddd-toolkit-macro = { version = "0.2", features = ["zeroize"] }
 zeroize = "1"
 ```
 
+Enable the `serde` feature for `Serialize`/`Deserialize` on `ValueObject`,
+`EntityId`, and `EnumVo` (not `SecretVo` - see its docs for why):
+
+```toml
+[dependencies]
+ddd-toolkit-macro = { version = "0.2", features = ["serde"] }
+serde = "1"
+```
+
 Requires Rust 1.85 or newer (edition 2024). You'll also need
 `ddd-toolkit-core` (or the `ddd-toolkit` facade) as a dependency of your own
 crate - the derives generate code that references it, but don't pull it in
@@ -69,6 +78,14 @@ All via `#[vo(...)]`:
 | `no_display` | `ValueObject`, `EntityId`, `EnumVo` | Skips generating `Display` (write your own) |
 | `rename_all = "snake_case"` (etc.) | `EnumVo` | Renames variants for `Display`/`FromStr` |
 | `zeroize` | `SecretVo` | Generates a `Drop` impl that zeroizes the inner value; requires this crate's `zeroize` feature *and* your own crate depending on the [`zeroize`](https://crates.io/crates/zeroize) crate directly |
+
+`serde` isn't a `#[vo(...)]` attribute - it's this crate's own Cargo
+feature. With it enabled (and `serde` in your own `[dependencies]`),
+`ValueObject`/`EntityId`/`EnumVo` always gain `Serialize`/`Deserialize`:
+the wrapped/entity-id types serialize as their inner value and
+re-validate through `TryFrom` on the way back in; enums serialize as
+their `Display`/`FromStr` string form. `SecretVo` never gains it, even
+with the feature on - see its docs.
 
 ## Example
 

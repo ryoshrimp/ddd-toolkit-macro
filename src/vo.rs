@@ -45,6 +45,45 @@ pub fn validation_parts(attrs: &VoAttrs, krate: &TokenStream2) -> (TokenStream2,
     }
 }
 
+// With the `serde` Cargo feature enabled on this crate, every
+// `#[derive(ValueObject)]`/`#[derive(EntityId)]` type gets a transparent
+// `Serialize`/`Deserialize` pair: serialize as the inner value, deserialize
+// by deserializing the inner value and re-running it through the same
+// validating `TryFrom` the rest of this bundle generates, so a value that
+// wouldn't construct by hand can't sneak in through deserialization either.
+// Like the `zeroize` Cargo feature, this only gates whether the code is
+// generated - the generated impls reference `::serde::...` by a bare path,
+// which only resolves if the *calling* crate depends on `serde` directly.
+#[cfg(feature = "serde")]
+fn serde_bundle(name: &syn::Ident, inner: &syn::Type) -> TokenStream2 {
+    quote! {
+        impl ::serde::Serialize for #name {
+            fn serialize<S>(&self, serializer: S) -> ::core::result::Result<S::Ok, S::Error>
+            where
+                S: ::serde::Serializer,
+            {
+                ::serde::Serialize::serialize(&self.0, serializer)
+            }
+        }
+
+        impl<'de> ::serde::Deserialize<'de> for #name {
+            fn deserialize<D>(deserializer: D) -> ::core::result::Result<Self, D::Error>
+            where
+                D: ::serde::Deserializer<'de>,
+            {
+                let inner = <#inner as ::serde::Deserialize>::deserialize(deserializer)?;
+                <Self as ::core::convert::TryFrom<#inner>>::try_from(inner)
+                    .map_err(::serde::de::Error::custom)
+            }
+        }
+    }
+}
+
+#[cfg(not(feature = "serde"))]
+fn serde_bundle(_name: &syn::Ident, _inner: &syn::Type) -> TokenStream2 {
+    quote!()
+}
+
 pub fn newtype_vo_bundle(
     input: &DeriveInput,
     inner: &syn::Type,
@@ -64,6 +103,7 @@ pub fn newtype_vo_bundle(
             }
         }
     };
+    let serde_impl = serde_bundle(name, inner);
     quote! {
         impl #krate::domain::ValueObject for #name {}
 
@@ -98,6 +138,8 @@ pub fn newtype_vo_bundle(
         }
 
         #display
+
+        #serde_impl
     }
 }
 
