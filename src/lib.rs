@@ -1,322 +1,266 @@
-//! Derive macros for `ddd-toolkit-core`'s value-object-shaped traits:
-//! [`ValueObject`](derive_value_object), [`EntityId`](derive_entity_id),
-//! [`SecretVo`](derive_secret_vo), and [`EnumVo`](derive_enum_vo). Works
-//! alongside `ddd-toolkit-core` directly, or through the `ddd-toolkit`
-//! facade crate - the generated code resolves the right crate path either
-//! way, so it doesn't matter which one the caller's `Cargo.toml` names.
+//! **English:** Derive value objects, identity-based entities, domain-event markers,
+//! and aggregate event queues for `ddd-toolkit-core`.
 //!
-//! Three of the four derives ([`ValueObject`](derive_value_object),
-//! [`EntityId`](derive_entity_id), [`SecretVo`](derive_secret_vo)) apply to
-//! a tuple struct with exactly one non-`pub` field, e.g. `struct
-//! Email(String);`. The fourth, [`EnumVo`](derive_enum_vo), applies to a
-//! fieldless enum instead. All four accept `#[vo(...)]` attributes to
-//! configure the generated code; each derive's own docs list which
-//! attributes it accepts and why the others are rejected.
+//! Add both `ddd-toolkit-macro` and `ddd-toolkit-core` to your dependencies.
+//! Expansion resolves the core package by name, including renamed dependencies;
+//! a facade dependency alone is not resolved. These macros generate implementations
+//! at compile time, not runtime synchronization or persistence.
 //!
-//! # Example
+//! Use [`ValueObject`] for field-based equality, [`Entity`] for identity-based
+//! equality, [`DomainEvent`] for event types, and [`AggregateRoot`] for a draining
+//! event queue. Do not separately derive traits that a macro already implements.
 //!
-//! ```
-//! use ddd_toolkit_core::domain::{ValidationError, Wrapped};
+//! **日本語:** `ddd-toolkit-core` 向けに、値オブジェクト、識別子で比較する
+//! エンティティ、ドメインイベントのマーカー、集約のイベントキューを導出します。
+//!
+//! 依存関係には `ddd-toolkit-macro` と `ddd-toolkit-core` の両方が必要です。
+//! コアのパッケージ名から参照先を解決するため依存の別名に対応しますが、
+//! ファサードだけの依存は解決しません。実装をコンパイル時に生成するもので、
+//! 実行時の同期や永続化は行いません。
+//!
+//! フィールドの値で比較する型には [`ValueObject`]、識別子で比較する型には
+//! [`Entity`]、イベント型には [`DomainEvent`]、イベントを取り出して空にする
+//! キューには [`AggregateRoot`] を使います。生成済みのトレイトを重複して導出しないでください。
+//!
+//! ```rust
 //! use ddd_toolkit_macro::ValueObject;
 //!
-//! #[derive(ValueObject, Clone, PartialEq, Debug)]
-//! #[vo(validate = "validate_email")]
-//! struct Email(String);
+//! #[derive(ValueObject)]
+//! struct Quantity(u32);
 //!
-//! fn validate_email(s: &str) -> Result<(), ValidationError> {
-//!     if s.contains('@') {
-//!         Ok(())
-//!     } else {
-//!         Err(ValidationError::new("Email", "missing @"))
-//!     }
-//! }
-//!
-//! let email = Email::try_from("a@b.com".to_string())?;
-//! assert_eq!(email.as_inner(), "a@b.com");
-//! assert!(Email::try_from("no-at-sign".to_string()).is_err());
-//! # Ok::<(), ValidationError>(())
+//! let quantity = Quantity::new(3);
+//! assert_eq!(quantity.as_inner(), &3);
+//! assert_eq!(quantity.into_inner(), 3);
 //! ```
-#![deny(missing_docs)]
 
-mod attributes;
-mod entity_id;
-mod enum_vo;
-mod krate;
-mod secret_vo;
-mod vo;
-
-use crate::enum_vo::expand_enum_vo;
-use crate::vo::expand_value_object;
-use crate::{entity_id::expand_entity_id, secret_vo::expand_secret_vo};
 use proc_macro::TokenStream;
-use syn::{DeriveInput, parse_macro_input};
+use syn::parse_macro_input;
 
-/// Derives [`ValueObject`], [`Wrapped`], `TryFrom<Inner>`, `From<Self> for
-/// Inner`, and `Display` for a single-field tuple struct.
+mod aggregate_root;
+mod domain_event;
+mod entity;
+mod path;
+mod value_object;
+
+/// **English:** Implements `ddd_toolkit_core::ValueObject` and value-based
+/// `Debug`, `Clone`, `PartialEq`, `Eq`, and `Hash`, with corresponding field bounds.
 ///
-/// [`ValueObject`]: https://docs.rs/ddd-toolkit-core/latest/ddd_toolkit_core/domain/trait.ValueObject.html
-/// [`Wrapped`]: https://docs.rs/ddd-toolkit-core/latest/ddd_toolkit_core/domain/trait.Wrapped.html
+/// Accepts nonempty named or tuple structs and nonempty enums, not unions or unit
+/// structs. A single-field struct exposes that field as `Inner`, `as_inner`, and
+/// `into_inner`; multi-field structs and enums use `Self` instead. Structs get
+/// `new` with fields in declaration order. Multi-field structs also get borrowed
+/// accessors named after fields, or `field_0`, `field_1`, etc. for tuple fields.
+/// Enums get `new_<variant>`, `is_<variant>`, and `as_<variant>`, using the fully
+/// lowercased variant name (not snake case). Variant accessors return `None` for
+/// another variant, `Some(())` for unit variants, or a tuple of field references.
+/// Lowercased variant names must be distinct; generated names must not collide
+/// with other methods or field accessors.
 ///
-/// # Requirements
+/// `#[value_object(validate = path, error = ErrorType)]` replaces `new` with
+/// `try_new` (or `try_new_<variant>`). Both options are required together. The
+/// validator receives `&Inner` for a single-field struct and `&Self` otherwise,
+/// returns `Result<(), ErrorType>`, and runs before the constructor returns the
+/// value. Its error is propagated; its panics are not caught. Validated struct
+/// fields cannot be unrestricted `pub`. Restricted visibility, direct construction
+/// inside the defining module, and enum variants can still bypass validation.
 ///
-/// The target must be a tuple struct with exactly one field, and that
-/// field must not be `pub`. A `pub` field would let callers construct the
-/// type directly (`Email("anything".into())`), bypassing the validation
-/// this derive puts into the generated `TryFrom` impl - so both violations
-/// are rejected at compile time rather than left as a foot-gun.
+/// `#[value_object(serde)]` additionally generates serialization through the core
+/// crate's serde re-export; enable the core crate's `serde` feature. Single-field
+/// structs serialize as their inner value, named structs as structs, tuple structs
+/// as tuples, and enums as externally tagged variants (tuple variants remain tuple
+/// variants even with one field). Deserialization runs validation when configured,
+/// mapping its errors to `value object validation failed`. Serialization generation
+/// is selected by this attribute, not by a feature on the macro crate.
+/// Invalid shapes, duplicate or unknown options, and missing core dependencies
+/// produce compile errors; field types must satisfy the generated trait bounds.
 ///
-/// # Attributes
+/// **日本語:** `ddd_toolkit_core::ValueObject` と値に基づく `Debug`、`Clone`、
+/// `PartialEq`、`Eq`、`Hash` を、各フィールドに必要な境界付きで実装します。
 ///
-/// All are passed as `#[vo(...)]` on the struct itself:
+/// 空でない名前付き・タプル構造体と列挙型に対応し、共用体やユニット構造体は拒否します。
+/// 単一フィールド構造体の `Inner`、`as_inner`、`into_inner` はそのフィールドを扱い、
+/// 複数フィールド構造体と列挙型では `Self` を扱います。構造体には宣言順の引数を取る
+/// `new` を生成します。複数フィールドの場合は名前付きフィールド名、またはタプルの
+/// `field_0`、`field_1` などの名前で借用アクセサーも生成します。
+/// 列挙型にはバリアント名をすべて小文字にした（snake case ではない）接尾辞で
+/// `new_<variant>`、`is_<variant>`、`as_<variant>` を生成します。
+/// バリアントアクセサーは不一致なら `None`、ユニットなら `Some(())`、それ以外は
+/// フィールド参照のタプルを返します。小文字化した名前は一意である必要があり、
+/// 生成する名前を他のメソッドやフィールドアクセサーと衝突させないでください。
 ///
-/// - `validate = "path::to::fn"` - runs `fn(&Inner) -> Result<(),
-///   ValidationError>` inside the generated `TryFrom` before the value is
-///   constructed. Without it, `TryFrom::Error` is
-///   [`Infallible`](std::convert::Infallible).
-/// - `no_display` - skips the generated `Display` impl, so a hand-written
-///   one can be provided instead.
+/// `#[value_object(validate = path, error = ErrorType)]` は `new` を `try_new`
+/// （列挙型では `try_new_<variant>`）に置き換えます。両オプションの同時指定が必要です。
+/// 検証関数は単一フィールドなら `&Inner`、それ以外なら `&Self` を受け取り、
+/// `Result<(), ErrorType>` を返します。値を返す前に検証し、エラーを伝播します。
+/// 検証関数のパニックは捕捉しません。検証付き構造体のフィールドは無制限の `pub` に
+/// できませんが、制限付き公開、定義モジュール内の直接構築、列挙型のバリアントからは
+/// 検証を迂回できます。
 ///
-/// `rename_all` and `zeroize` are rejected here: `rename_all` only affects
-/// [`EnumVo`](derive_enum_vo)'s variant names, and `zeroize` only makes
-/// sense on [`SecretVo`](derive_secret_vo), which owns a value worth
-/// scrubbing from memory on drop.
+/// `#[value_object(serde)]` はコアの serde 再公開を使う直列化実装も生成します。
+/// コアの `serde` feature を有効にしてください。単一フィールドは内包値、名前付き
+/// 構造体は構造体、タプル構造体はタプル、列挙型は外部タグ形式で直列化します。
+/// タプルバリアントは単一フィールドでもタプル形式です。逆直列化時も設定された検証を
+/// 実行し、検証エラーを `value object validation failed` に変換します。
+/// 直列化の生成はマクロクレートの feature ではなく、この属性で選択します。
+/// 非対応の形状、重複・未知のオプション、コア依存の欠落はコンパイルエラーになります。
+/// フィールド型は生成するトレイトの境界を満たす必要があります。
 ///
-/// # `serde`
-///
-/// With this crate's own `serde` Cargo feature enabled (and the calling
-/// crate depending on `serde` directly - proc-macro output resolves bare
-/// paths at the call site, not here), this also derives `Serialize`
-/// (delegating to the inner value) and `Deserialize` (deserializing the
-/// inner value, then re-running it through the same validating `TryFrom`
-/// this derive generates, so an invalid value is rejected during
-/// deserialization exactly as it would be through `TryFrom` directly).
-///
-/// # Examples
-///
-/// ```
-/// use ddd_toolkit_core::domain::{ValidationError, Wrapped};
+/// ```rust
 /// use ddd_toolkit_macro::ValueObject;
 ///
-/// #[derive(ValueObject, Clone, PartialEq, Debug)]
-/// #[vo(validate = "validate_email")]
-/// struct Email(String);
+/// #[derive(ValueObject)]
+/// #[value_object(validate = positive, error = &'static str)]
+/// struct Quantity(u32);
 ///
-/// fn validate_email(s: &str) -> Result<(), ValidationError> {
-///     if s.contains('@') {
-///         Ok(())
-///     } else {
-///         Err(ValidationError::new("Email", "missing @"))
-///     }
+/// fn positive(value: &u32) -> Result<(), &'static str> {
+///     if *value > 0 { Ok(()) } else { Err("zero quantity") }
 /// }
 ///
-/// let email = Email::try_from("a@b.com".to_string())?;
-/// assert_eq!(email.as_inner(), "a@b.com");
-/// assert_eq!(email.to_string(), "a@b.com");
-/// assert!(Email::try_from("no-at-sign".to_string()).is_err());
-/// # Ok::<(), ValidationError>(())
+/// assert_eq!(Quantity::try_new(0), Err("zero quantity"));
+/// assert_eq!(Quantity::try_new(2).unwrap().into_inner(), 2);
+///
+/// #[derive(ValueObject)]
+/// enum Status { Pending, Ready(u32) }
+/// let status = Status::new_ready(7);
+/// assert_eq!(status.as_ready(), Some((&7,)));
+/// assert!(!status.is_pending());
 /// ```
-#[proc_macro_derive(ValueObject, attributes(vo))]
+#[proc_macro_derive(ValueObject, attributes(value_object))]
 pub fn derive_value_object(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-    expand_value_object(&input)
+    let input = parse_macro_input!(input as syn::DeriveInput);
+    value_object::expand(input)
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
 
-/// Derives [`EntityId`] - and everything
-/// [`#[derive(ValueObject)]`](derive_value_object) derives - for a
-/// single-field tuple struct.
+/// **English:** Implements `ddd_toolkit_core::Entity`, a borrowed inherent `id()`
+/// accessor, and `PartialEq`, `Eq`, and `Hash` using only the identifier field.
 ///
-/// [`EntityId`]: https://docs.rs/ddd-toolkit-core/latest/ddd_toolkit_core/domain/trait.EntityId.html
+/// Requires a named-field struct with exactly one `#[entity(id)]` field. Other
+/// fields do not participate in comparison or hashing; identifier types must
+/// implement the corresponding traits. No constructor or identifier validation
+/// is generated. Non-struct inputs, misplaced flags, missing or multiple identifier
+/// fields, unknown options, and missing core dependencies cause compile errors.
 ///
-/// On top of the `ValueObject` bundle, this adds `Eq`, `Hash`, `Ord`, and
-/// `PartialOrd`, all delegating to the wrapped field - two ids compare and
-/// hash equal exactly when their inner values do. That makes the result
-/// usable as a `HashMap`/`HashSet` key or in a sorted collection, which is
-/// the common case for an identifier type.
+/// **日本語:** `ddd_toolkit_core::Entity` と識別子を借用する固有の `id()`、
+/// 識別子フィールドだけを使う `PartialEq`、`Eq`、`Hash` を実装します。
 ///
-/// See [`derive_value_object`] for the shared requirements (single-field
-/// tuple struct, non-`pub` field) and `#[vo(...)]` attributes (`validate`,
-/// `no_display`) - both apply here unchanged, and `rename_all`/`zeroize`
-/// are rejected for the same reasons. `serde` support (see
-/// [`derive_value_object`]'s docs) applies here unchanged too.
+/// 名前付き構造体に `#[entity(id)]` フィールドがちょうど一つ必要です。
+/// 他のフィールドは比較やハッシュに使いません。識別子型は対応するトレイトを
+/// 実装する必要があります。コンストラクターや識別子の検証は生成しません。
+/// 構造体以外、フラグの誤配置、識別子の欠落・複数指定、未知のオプション、
+/// コア依存の欠落はコンパイルエラーになります。
 ///
-/// # Examples
+/// ```rust
+/// use ddd_toolkit_macro::Entity;
 ///
-/// ```
-/// use ddd_toolkit_core::domain::Wrapped;
-/// use ddd_toolkit_macro::EntityId;
-/// use std::collections::HashSet;
-///
-/// #[derive(EntityId, Clone, PartialEq, Debug)]
-/// struct UserId(u64);
-///
-/// let a = UserId::try_from(1)?;
-/// let b = UserId::try_from(2)?;
-/// assert!(a < b);
-///
-/// let ids: HashSet<UserId> = HashSet::from([UserId::try_from(1)?, UserId::try_from(1)?]);
-/// assert_eq!(ids.len(), 1, "equal inner values dedupe to one id");
-/// # Ok::<(), std::convert::Infallible>(())
-/// ```
-#[proc_macro_derive(EntityId, attributes(vo))]
-pub fn derive_entity_id(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-    expand_entity_id(&input)
-        .unwrap_or_else(syn::Error::into_compile_error)
-        .into()
-}
-
-/// Derives [`SecretVo`] for a single-field tuple struct, with a `Debug`
-/// impl that always redacts the wrapped value.
-///
-/// [`SecretVo`]: https://docs.rs/ddd-toolkit-core/latest/ddd_toolkit_core/domain/trait.SecretVo.html
-///
-/// Unlike [`ValueObject`](derive_value_object), this derive generates its
-/// own `Debug` impl (printing `TypeName(***)`, never the wrapped value) -
-/// so the target must not derive or implement `Debug` itself, or the two
-/// impls collide (`E0119`). It never generates `Display` either, which is
-/// why `no_display` is rejected here: there is nothing for it to suppress.
-///
-/// See [`derive_value_object`] for the shared single-field-tuple-struct
-/// requirement and the `validate` attribute, which behaves identically
-/// here. `rename_all` is rejected for the same reason as on `ValueObject`.
-///
-/// # Attributes
-///
-/// - `validate = "path::to::fn"` - see [`derive_value_object`].
-/// - `zeroize` - generates a `Drop` impl that calls
-///   [`Zeroize::zeroize`](https://docs.rs/zeroize/latest/zeroize/trait.Zeroize.html#tymethod.zeroize)
-///   on the wrapped value when it goes out of scope. Requires *this*
-///   crate's own `zeroize` Cargo feature to be enabled, and the *calling*
-///   crate to depend on the `zeroize` crate directly (the generated `Drop`
-///   impl references it by a bare path, which only resolves at the call
-///   site). Without the feature enabled, `#[vo(zeroize)]` is rejected at
-///   compile time with a message naming both requirements, rather than
-///   failing later with a confusing unresolved-crate error.
-///
-/// Unlike [`ValueObject`](derive_value_object)/[`EntityId`](derive_entity_id)/
-/// [`EnumVo`](derive_enum_vo), this derive never generates `serde` support,
-/// even with this crate's `serde` Cargo feature enabled: a `Serialize` impl
-/// on a secret risks writing the raw value to a log or response body by
-/// accident, which is exactly what this type exists to prevent. Wrap a
-/// `SecretVo` in your own type with an explicit, intentional `Serialize`
-/// impl if you truly need to send it somewhere.
-///
-/// # Examples
-///
-/// ```
-/// use ddd_toolkit_core::domain::SecretVo;
-/// use ddd_toolkit_macro::SecretVo as DeriveSecretVo;
-///
-/// #[derive(Clone, PartialEq, DeriveSecretVo)]
-/// struct ApiKey(String);
-///
-/// let secret = ApiKey::try_new("sekret".to_string())?;
-/// assert_eq!(secret.expose_secret(), "sekret");
-///
-/// let debug = format!("{secret:?}");
-/// assert_eq!(debug, "ApiKey(***)");
-/// assert!(!debug.contains("sekret"));
-/// # Ok::<(), std::convert::Infallible>(())
-/// ```
-///
-/// With the `zeroize` feature enabled on this crate, and `zeroize` in the
-/// caller's own dependencies:
-///
-/// ```ignore
-/// use ddd_toolkit_core::domain::SecretVo;
-/// use ddd_toolkit_macro::SecretVo as DeriveSecretVo;
-///
-/// #[derive(Clone, PartialEq, DeriveSecretVo)]
-/// #[vo(zeroize)]
-/// struct ZeroizingSecret([u8; 4]);
-///
-/// let secret = ZeroizingSecret::try_new([1, 2, 3, 4])?;
-/// drop(secret); // wipes the inner bytes on the way out
-/// # Ok::<(), std::convert::Infallible>(())
-/// ```
-#[proc_macro_derive(SecretVo, attributes(vo))]
-pub fn derive_secret_vo(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-    expand_secret_vo(&input)
-        .unwrap_or_else(syn::Error::into_compile_error)
-        .into()
-}
-
-/// Derives [`EnumVo`], `Display`, and `FromStr` for a fieldless enum.
-///
-/// [`EnumVo`]: https://docs.rs/ddd-toolkit-core/latest/ddd_toolkit_core/domain/trait.EnumVo.html
-///
-/// `EnumVo::variants()`, `Display`, and `FromStr` are all generated from
-/// the same variant list, so they can't drift out of sync with each other
-/// or with the enum's actual variants. Every variant must be a unit
-/// variant (no fields) - a variant carrying data isn't a simple
-/// enumeration, so the derive rejects it at compile time instead of
-/// silently ignoring the payload.
-///
-/// `validate` is rejected here: `FromStr` already exhaustively checks
-/// variant membership, so there is no "invalid but parseable" value left
-/// for a validator to catch. `zeroize` is rejected for the same reason as
-/// on [`ValueObject`](derive_value_object) - a fieldless enum owns nothing
-/// worth scrubbing.
-///
-/// # Attributes
-///
-/// - `no_display` - see [`derive_value_object`].
-/// - `rename_all = "..."` - renames every variant for `Display`/`FromStr`
-///   according to one of: `PascalCase` (the default - unchanged), `snake_case`,
-///   `SCREAMING_SNAKE_CASE`, `kebab-case`, `lowercase`, `UPPERCASE`, or
-///   `camelCase`. An unrecognized rule name is rejected at compile time,
-///   listing the valid options.
-///
-/// With this crate's own `serde` Cargo feature enabled (and the calling
-/// crate depending on `serde` directly), this also derives `Serialize`
-/// and `Deserialize`, both using the same variant/string table
-/// `Display`/`FromStr` are generated from - so serializing writes the
-/// `Display` string and deserializing accepts exactly what `FromStr`
-/// accepts, `rename_all` included.
-///
-/// # Examples
-///
-/// ```
-/// use ddd_toolkit_core::domain::EnumVo;
-/// use ddd_toolkit_macro::EnumVo as DeriveEnumVo;
-/// use std::str::FromStr;
-///
-/// #[derive(Debug, Clone, Copy, PartialEq, DeriveEnumVo)]
-/// enum Status {
-///     Active,
-///     Inactive,
+/// #[derive(Entity)]
+/// struct Order {
+///     #[entity(id)]
+///     id: u64,
+///     total: u32,
 /// }
-///
-/// assert_eq!(Status::variants(), &[Status::Active, Status::Inactive]);
-/// assert_eq!(Status::Active.to_string(), "Active");
-/// assert_eq!(Status::from_str("Active"), Ok(Status::Active));
-/// assert!(Status::from_str("bogus").is_err());
+/// let first = Order { id: 1, total: 10 };
+/// let updated = Order { id: 1, total: 20 };
+/// assert!(first == updated);
+/// assert_eq!(updated.id(), &1);
 /// ```
-///
-/// With `rename_all`, `Display` and `FromStr` agree on the renamed form:
-///
-/// ```
-/// use ddd_toolkit_macro::EnumVo as DeriveEnumVo;
-/// use std::str::FromStr;
-///
-/// #[derive(Debug, Clone, Copy, PartialEq, DeriveEnumVo)]
-/// #[vo(rename_all = "snake_case")]
-/// enum HttpMethod {
-///     Get,
-///     PostRequest,
-/// }
-///
-/// assert_eq!(HttpMethod::PostRequest.to_string(), "post_request");
-/// assert_eq!(HttpMethod::from_str("post_request"), Ok(HttpMethod::PostRequest));
-/// assert!(HttpMethod::from_str("PostRequest").is_err());
-/// ```
-#[proc_macro_derive(EnumVo, attributes(vo))]
-pub fn derive_enum_vo(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-    expand_enum_vo(&input)
+#[proc_macro_derive(Entity, attributes(entity))]
+pub fn derive_entity(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as syn::DeriveInput);
+    entity::expand(input)
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
+
+/// **English:** Implements the empty `ddd_toolkit_core::DomainEvent` marker for
+/// a struct or enum, preserving its generic parameters and where clause.
+///
+/// Does not add methods, serialization, `Send`, or `Sync` bounds. Event contents
+/// and delivery remain the caller's responsibility. Unions and missing core
+/// dependencies produce compile errors.
+///
+/// **日本語:** 構造体または列挙型に、空の `ddd_toolkit_core::DomainEvent`
+/// マーカーを実装し、ジェネリック引数と where 節を維持します。
+///
+/// メソッド、直列化、`Send`・`Sync` 境界は追加しません。イベントの内容と配信は
+/// 呼び出し側が管理します。共用体やコア依存の欠落はコンパイルエラーになります。
+///
+/// ```rust
+/// use ddd_toolkit_macro::DomainEvent;
+///
+/// #[derive(DomainEvent)]
+/// enum OrderEvent { Placed { order_id: u64 }, Cancelled }
+/// fn accept_event(_: impl ddd_toolkit_core::DomainEvent) {}
+/// accept_event(OrderEvent::Placed { order_id: 1 });
+/// ```
+#[proc_macro_derive(DomainEvent)]
+pub fn derive_domain_event(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as syn::DeriveInput);
+    domain_event::expand(input)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+/// **English:** Implements `ddd_toolkit_core::AggregateRoot` using a struct's
+/// `#[aggregate(events)]` vector as its pending event queue.
+///
+/// Requires a named-field struct that already implements `ddd_toolkit_core::Entity`
+/// (for example via [`Entity`]) and exactly one marked field spelled `Vec<Event>`
+/// or `std::vec::Vec<Event>`. Type aliases and other vector paths are not accepted;
+/// `Event` must implement `ddd_toolkit_core::DomainEvent` (see [`DomainEvent`]).
+/// `record_event` appends with `Vec::push`, preserving insertion order, and may
+/// allocate. `pull_events` moves out the vector with `core::mem::take`, leaving an
+/// empty queue; repeated pulls return empty vectors until another event is recorded.
+/// These are trait methods, not inherent methods; import the core trait to call
+/// them. Both require exclusive mutable access, with no locking, event publication,
+/// persistence, or domain-state update generated. Vector growth has the usual
+/// allocation and capacity limits of `Vec::push`.
+/// Unsupported shapes, missing or duplicate queues, unknown or valued flags,
+/// missing trait implementations, and missing core dependencies fail to compile.
+///
+/// **日本語:** 構造体の `#[aggregate(events)]` ベクターを未処理イベントキュー
+/// として `ddd_toolkit_core::AggregateRoot` を実装します。
+///
+/// `ddd_toolkit_core::Entity` を実装済みの名前付き構造体（例: [`Entity`] による導出）
+/// と、`Vec<Event>` または `std::vec::Vec<Event>` と記述されたキューフィールドが
+/// ちょうど一つ必要です。型エイリアスや他のベクターパスは受け付けません。
+/// `Event` は `ddd_toolkit_core::DomainEvent` を実装する必要があります（[`DomainEvent`]）。
+/// `record_event` は `Vec::push` で挿入順に追加し、メモリを確保する場合があります。
+/// `pull_events` は `core::mem::take` でベクターを取り出し、キューを空にします。
+/// 次の記録まで再度取り出しても空のベクターを返します。固有メソッドではなくトレイト
+/// メソッドなので、呼び出すにはコアのトレイトをインポートしてください。
+/// どちらも排他的な可変アクセスを要求し、ロック、イベント配信、永続化、ドメイン状態の
+/// 更新は生成しません。キューの拡張には `Vec::push` と同じメモリ確保・容量制限があります。
+/// 非対応の形状、キューの欠落・重複、未知または値付きフラグ、必要なトレイト実装や
+/// コア依存の欠落はコンパイルエラーになります。
+///
+/// ```rust
+/// use ddd_toolkit_core::AggregateRoot as _;
+/// use ddd_toolkit_macro::{AggregateRoot, DomainEvent, Entity};
+///
+/// #[derive(DomainEvent)]
+/// struct Placed;
+///
+/// #[derive(Entity, AggregateRoot)]
+/// struct Order {
+///     #[entity(id)]
+///     id: u64,
+///     #[aggregate(events)]
+///     events: Vec<Placed>,
+/// }
+/// let mut order = Order { id: 1, events: Vec::new() };
+/// order.record_event(Placed);
+/// assert_eq!(order.pull_events().len(), 1);
+/// assert!(order.pull_events().is_empty());
+/// ```
+#[proc_macro_derive(AggregateRoot, attributes(aggregate))]
+pub fn derive_aggregate_root(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as syn::DeriveInput);
+    aggregate_root::expand(input)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+#[cfg(test)]
+mod expansion_tests;
