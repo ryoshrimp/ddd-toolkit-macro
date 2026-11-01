@@ -1,5 +1,12 @@
 # ddd-toolkit-macro
 
+> **Moved to the monorepo:** Development now takes place in
+> [ryoshrimp/ddd-toolkit](https://github.com/ryoshrimp/ddd-toolkit), under
+> [`crates/macro`](https://github.com/ryoshrimp/ddd-toolkit/tree/main/crates/macro).
+> Please open new issues and pull requests in the monorepo.
+> This repository is archived for historical reference. The crate name and
+> existing releases on crates.io are unchanged.
+
 [![docs.rs](https://img.shields.io/docsrs/ddd-toolkit-macro)](https://docs.rs/ddd-toolkit-macro)
 [![CI](https://github.com/ryoshrimp/ddd-toolkit-macro/actions/workflows/ci.yml/badge.svg)](https://github.com/ryoshrimp/ddd-toolkit-macro/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/ryoshrimp/ddd-toolkit-macro/graph/badge.svg)](https://codecov.io/gh/ryoshrimp/ddd-toolkit-macro)
