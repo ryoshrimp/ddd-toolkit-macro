@@ -1,5 +1,0 @@
-error: `zeroize` is only supported on `#[derive(SecretVo)]`
- --> tests/ui/value_object_zeroize_rejected.rs:3:8
-  |
-3 | struct Foo(String);
-  |        ^^^
