@@ -261,3 +261,6 @@ pub fn derive_aggregate_root(input: TokenStream) -> TokenStream {
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
+
+#[cfg(test)]
+mod expansion_tests;
