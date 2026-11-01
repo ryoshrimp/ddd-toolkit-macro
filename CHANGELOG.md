@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-01
+
+### Added
+
+- `Entity` derive with an identifier selected by `#[entity(id)]`, an `id()`
+  accessor, and identity-based equality and hashing.
+- `DomainEvent` marker derive for structs and enums.
+- `AggregateRoot` derive with a `#[aggregate(events)]` vector, ordered event
+  recording, and draining retrieval.
+- Named and multi-field tuple structs and data-carrying enums for `ValueObject`,
+  with constructors and borrowed field or variant accessors.
+- Bilingual English/Japanese rustdoc, runnable examples, and compile-time tests.
+
+### Changed
+
+- **Breaking:** `ValueObject` implements core's `ValueObject` trait with
+  `as_inner` and `into_inner`, plus `Debug`, `Clone`, `PartialEq`, `Eq`, and `Hash`.
+  Construction uses `new`, or `try_new` when validation is configured, instead
+  of the previous conversion-based API.
+- **Breaking:** validation uses paired `validate = path` and `error = ErrorType`
+  options in `#[value_object(...)]` rather than `#[vo(...)]`.
+- **Breaking:** serde generation is selected per value object with
+  `#[value_object(serde)]` and requires the core dependency's `serde` feature.
+  Deserialization validates when configured; enums use externally tagged variants.
+- **Breaking:** generated crate paths require a direct `ddd-toolkit-core`
+  dependency; renamed dependencies work, but facade-only dependencies do not.
+- Tests use `ddd-toolkit-core` with its serde support enabled. CI no longer
+  requests removed macro-crate features.
+- README and package metadata describe the current four derives.
+
+### Removed
+
+- **Breaking:** `EntityId`, `SecretVo`, and `EnumVo` derives, `#[vo(...)]`
+  attributes, and macro-crate `zeroize` and `serde` features.
+- Generated `Display`, `TryFrom`, and inner-value `From` implementations from
+  the previous value-object API.
+
 ## [0.3.0] - 2026-07-21
 
 ### Added
@@ -134,7 +171,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   membership is already exhaustive) and properly supports `no_display`; the
   other three macros now reject `rename_all`.
 
-[Unreleased]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.2.4...HEAD
+[Unreleased]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.2.4...v0.3.0
 [0.2.4]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/ryoshrimp/ddd-toolkit-macro/compare/v0.2.1...v0.2.2

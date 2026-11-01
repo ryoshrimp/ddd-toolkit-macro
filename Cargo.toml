@@ -1,10 +1,10 @@
 [package]
 name = "ddd-toolkit-macro"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"
-description = "Derive macros for ddd-toolkit-core's ValueObject, EntityId, SecretVo, and EnumVo traits."
+description = "Derive macros for ddd-toolkit-core's ValueObject, Entity, DomainEvent, and AggregateRoot traits."
 repository = "https://github.com/ryoshrimp/ddd-toolkit-macro"
 documentation = "https://docs.rs/ddd-toolkit-macro"
 readme = "README.md"
@@ -25,12 +25,8 @@ quote = "1.0.47"
 syn = { version = "3.0.6", features = ["derive", "parsing", "printing", "proc-macro"] }
 
 [dev-dependencies]
-# Only used by this crate's own tests/*.rs (real usages of the generated
-# code, exercising the ValueObject/EntityId/SecretVo/EnumVo traits). Nothing
-# in src/ needs ddd-toolkit-core compiled in - the derives only reference it
-# via generated token paths (see src/krate.rs), resolved in the *calling*
-# crate, not here. Any real user of these derives needs ddd-toolkit-core (or
-# the ddd-toolkit facade) as their own dependency regardless; this crate
-# doesn't need to force it on them as a `[dependencies]` entry too.
+# Tests exercise generated implementations against core's traits.
+# Macro expansion resolves the calling crate's direct core dependency
+# (including renamed dependencies); core is not needed to build the macros.
 ddd-toolkit-core = { version = "0.4.0", features = ["serde"] }
 trybuild = "1"
