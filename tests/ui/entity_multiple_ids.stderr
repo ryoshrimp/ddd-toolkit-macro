@@ -1,0 +1,23 @@
+error: cannot find derive macro `Entity` in this scope
+ --> tests/ui/entity_multiple_ids.rs:3:10
+  |
+3 | #[derive(Entity)]
+  |          ^^^^^^
+  |
+note: `Entity` is imported here, but it is only a trait, without a derive macro
+ --> tests/ui/entity_multiple_ids.rs:1:5
+  |
+1 | use ddd_toolkit_core::Entity;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: cannot find attribute `entity` in this scope
+ --> tests/ui/entity_multiple_ids.rs:5:7
+  |
+5 |     #[entity(id)]
+  |       ^^^^^^
+
+error: cannot find attribute `entity` in this scope
+ --> tests/ui/entity_multiple_ids.rs:7:7
+  |
+7 |     #[entity(id)]
+  |       ^^^^^^

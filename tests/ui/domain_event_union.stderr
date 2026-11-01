@@ -1,0 +1,11 @@
+error: cannot find derive macro `DomainEvent` in this scope
+ --> tests/ui/domain_event_union.rs:3:10
+  |
+3 | #[derive(DomainEvent)]
+  |          ^^^^^^^^^^^
+  |
+note: `DomainEvent` is imported here, but it is only a trait, without a derive macro
+ --> tests/ui/domain_event_union.rs:1:5
+  |
+1 | use ddd_toolkit_core::DomainEvent;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

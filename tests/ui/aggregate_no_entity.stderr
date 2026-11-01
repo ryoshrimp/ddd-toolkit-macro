@@ -1,0 +1,29 @@
+error: cannot find derive macro `AggregateRoot` in this scope
+ --> tests/ui/aggregate_no_entity.rs:6:10
+  |
+6 | #[derive(AggregateRoot)]
+  |          ^^^^^^^^^^^^^
+  |
+note: `AggregateRoot` is imported here, but it is only a trait, without a derive macro
+ --> tests/ui/aggregate_no_entity.rs:1:24
+  |
+1 | use ddd_toolkit_core::{AggregateRoot, DomainEvent};
+  |                        ^^^^^^^^^^^^^
+
+error: cannot find attribute `aggregate` in this scope
+ --> tests/ui/aggregate_no_entity.rs:8:7
+  |
+8 |     #[aggregate(events)]
+  |       ^^^^^^^^^
+
+error: cannot find derive macro `DomainEvent` in this scope
+ --> tests/ui/aggregate_no_entity.rs:3:10
+  |
+3 | #[derive(DomainEvent)]
+  |          ^^^^^^^^^^^
+  |
+note: `DomainEvent` is imported here, but it is only a trait, without a derive macro
+ --> tests/ui/aggregate_no_entity.rs:1:39
+  |
+1 | use ddd_toolkit_core::{AggregateRoot, DomainEvent};
+  |                                       ^^^^^^^^^^^

@@ -1,0 +1,33 @@
+error: cannot find derive macro `AggregateRoot` in this scope
+ --> tests/ui/aggregate_queue_no_type.rs:3:10
+  |
+3 | #[derive(AggregateRoot)]
+  |          ^^^^^^^^^^^^^
+  |
+note: `AggregateRoot` is imported here, but it is only a trait, without a derive macro
+ --> tests/ui/aggregate_queue_no_type.rs:1:5
+  |
+1 | use ddd_toolkit_core::AggregateRoot;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: cannot find attribute `aggregate` in this scope
+ --> tests/ui/aggregate_queue_no_type.rs:5:7
+  |
+5 |     #[aggregate(events)]
+  |       ^^^^^^^^^
+
+error[E0107]: missing generics for struct `Vec`
+ --> tests/ui/aggregate_queue_no_type.rs:6:13
+  |
+6 |     events: Vec,
+  |             ^^^ expected at least 1 generic argument
+  |
+note: struct defined here, with at least 1 generic parameter: `T`
+ --> $RUST/alloc/src/vec/mod.rs
+  |
+  | pub struct Vec<T, #[unstable(feature = "allocator_api", issue = "32838")] A: Allocator = Global> {
+  |            ^^^ -
+help: add missing generic argument
+  |
+6 |     events: Vec<T>,
+  |                +++

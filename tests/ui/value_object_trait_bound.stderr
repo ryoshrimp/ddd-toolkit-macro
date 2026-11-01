@@ -1,0 +1,20 @@
+error: cannot find derive macro `ValueObject` in this scope
+ --> tests/ui/value_object_trait_bound.rs:5:10
+  |
+5 | #[derive(ValueObject)]
+  |          ^^^^^^^^^^^
+  |
+note: `ValueObject` is imported here, but it is only a trait, without a derive macro
+ --> tests/ui/value_object_trait_bound.rs:1:5
+  |
+1 | use ddd_toolkit_core::ValueObject;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0599]: no function or associated item named `new` found for struct `Wrapped` in the current scope
+ --> tests/ui/value_object_trait_bound.rs:9:26
+  |
+6 | struct Wrapped(NotClone);
+  | -------------- function or associated item `new` not found for this struct
+...
+9 |     let value = Wrapped::new(NotClone);
+  |                          ^^^ function or associated item not found in `Wrapped`
