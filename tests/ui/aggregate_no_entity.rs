@@ -1,4 +1,4 @@
-use ddd_toolkit_core::{AggregateRoot, DomainEvent};
+use ddd_toolkit_macro::{AggregateRoot, DomainEvent};
 
 #[derive(DomainEvent)]
 struct Event;

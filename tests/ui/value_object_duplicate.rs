@@ -1,4 +1,4 @@
-use ddd_toolkit_core::ValueObject;
+use ddd_toolkit_macro::ValueObject;
 
 #[derive(ValueObject)]
 #[value_object(serde)]

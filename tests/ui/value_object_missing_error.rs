@@ -1,4 +1,4 @@
-use ddd_toolkit_core::ValueObject;
+use ddd_toolkit_macro::ValueObject;
 
 fn validate(_: &String) -> Result<(), &'static str> {
     Ok(())

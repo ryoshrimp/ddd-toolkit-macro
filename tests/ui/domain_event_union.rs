@@ -1,4 +1,4 @@
-use ddd_toolkit_core::DomainEvent;
+use ddd_toolkit_macro::DomainEvent;
 
 #[derive(DomainEvent)]
 union InvalidEvent {

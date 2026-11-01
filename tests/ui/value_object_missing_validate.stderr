@@ -1,17 +1,5 @@
-error: cannot find derive macro `ValueObject` in this scope
- --> tests/ui/value_object_missing_validate.rs:3:10
-  |
-3 | #[derive(ValueObject)]
-  |          ^^^^^^^^^^^
-  |
-note: `ValueObject` is imported here, but it is only a trait, without a derive macro
- --> tests/ui/value_object_missing_validate.rs:1:5
-  |
-1 | use ddd_toolkit_core::ValueObject;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-error: cannot find attribute `value_object` in this scope
- --> tests/ui/value_object_missing_validate.rs:4:3
+error: validate and error must be specified together
+ --> tests/ui/value_object_missing_validate.rs:4:1
   |
 4 | #[value_object(error = &'static str)]
-  |   ^^^^^^^^^^^^
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

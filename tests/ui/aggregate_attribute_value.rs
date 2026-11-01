@@ -1,4 +1,4 @@
-use ddd_toolkit_core::AggregateRoot;
+use ddd_toolkit_macro::AggregateRoot;
 
 #[derive(AggregateRoot)]
 struct AttributeValue {

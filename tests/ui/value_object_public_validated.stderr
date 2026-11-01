@@ -1,17 +1,5 @@
-error: cannot find derive macro `ValueObject` in this scope
-  --> tests/ui/value_object_public_validated.rs:10:10
+error: validated ValueObject inner fields must not be public
+  --> tests/ui/value_object_public_validated.rs:12:24
    |
-10 | #[derive(ValueObject)]
-   |          ^^^^^^^^^^^
-   |
-note: `ValueObject` is imported here, but it is only a trait, without a derive macro
-  --> tests/ui/value_object_public_validated.rs:1:5
-   |
- 1 | use ddd_toolkit_core::ValueObject;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-error: cannot find attribute `value_object` in this scope
-  --> tests/ui/value_object_public_validated.rs:11:3
-   |
-11 | #[value_object(validate = validate, error = &'static str)]
-   |   ^^^^^^^^^^^^
+12 | pub struct PublicValue(pub String);
+   |                        ^^^^^^^^^^

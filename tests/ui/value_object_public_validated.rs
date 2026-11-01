@@ -1,4 +1,4 @@
-use ddd_toolkit_core::ValueObject;
+use ddd_toolkit_macro::ValueObject;
 
 fn validate(value: &String) -> Result<(), &'static str> {
     if value.is_empty() { Err("empty") } else { Ok(()) }

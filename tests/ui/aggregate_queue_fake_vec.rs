@@ -1,4 +1,4 @@
-use ddd_toolkit_core::{AggregateRoot, Entity};
+use ddd_toolkit_macro::{AggregateRoot, Entity};
 
 mod fake {
     /// **English:** Mimics a vector name without providing a standard event queue.

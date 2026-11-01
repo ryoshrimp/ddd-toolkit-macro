@@ -1,11 +1,5 @@
-error: cannot find derive macro `Entity` in this scope
- --> tests/ui/entity_missing_id.rs:3:10
+error: Entity requires exactly one #[entity(id)] field
+ --> tests/ui/entity_missing_id.rs:4:8
   |
-3 | #[derive(Entity)]
-  |          ^^^^^^
-  |
-note: `Entity` is imported here, but it is only a trait, without a derive macro
- --> tests/ui/entity_missing_id.rs:1:5
-  |
-1 | use ddd_toolkit_core::Entity;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+4 | struct MissingId {
+  |        ^^^^^^^^^

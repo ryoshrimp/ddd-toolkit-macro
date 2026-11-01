@@ -1,4 +1,4 @@
-use ddd_toolkit_core::Entity;
+use ddd_toolkit_macro::Entity;
 
 #[derive(Entity)]
 struct UnknownEntity {

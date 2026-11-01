@@ -1,17 +1,5 @@
-error: cannot find derive macro `AggregateRoot` in this scope
- --> tests/ui/aggregate_queue_not_vec.rs:3:10
+error: aggregate event queue must have type Vec<Event>
+ --> tests/ui/aggregate_queue_not_vec.rs:6:13
   |
-3 | #[derive(AggregateRoot)]
-  |          ^^^^^^^^^^^^^
-  |
-note: `AggregateRoot` is imported here, but it is only a trait, without a derive macro
- --> tests/ui/aggregate_queue_not_vec.rs:1:5
-  |
-1 | use ddd_toolkit_core::AggregateRoot;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-error: cannot find attribute `aggregate` in this scope
- --> tests/ui/aggregate_queue_not_vec.rs:5:7
-  |
-5 |     #[aggregate(events)]
-  |       ^^^^^^^^^
+6 |     events: Option<u64>,
+  |             ^^^^^^^^^^^

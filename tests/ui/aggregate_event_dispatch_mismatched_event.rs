@@ -1,4 +1,5 @@
-use ddd_toolkit_core::{dispatch_events, AggregateRoot, DomainEvent, DomainEventPublisher, Entity};
+use ddd_toolkit_core::{dispatch_events, DomainEventPublisher};
+use ddd_toolkit_macro::{AggregateRoot, DomainEvent, Entity};
 
 #[derive(DomainEvent)]
 struct AggregateEvent;

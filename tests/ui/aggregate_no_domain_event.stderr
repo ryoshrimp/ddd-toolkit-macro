@@ -1,17 +1,12 @@
-error: cannot find derive macro `AggregateRoot` in this scope
- --> tests/ui/aggregate_no_domain_event.rs:5:10
+error[E0277]: the trait bound `Event: DomainEvent` is not satisfied
+ --> tests/ui/aggregate_no_domain_event.rs:5:18
   |
-5 | #[derive(AggregateRoot)]
-  |          ^^^^^^^^^^^^^
+5 | #[derive(Entity, AggregateRoot)]
+  |                  ^^^^^^^^^^^^^ unsatisfied trait bound
   |
-note: `AggregateRoot` is imported here, but it is only a trait, without a derive macro
- --> tests/ui/aggregate_no_domain_event.rs:1:5
+help: the trait `DomainEvent` is not implemented for `Event`
+ --> tests/ui/aggregate_no_domain_event.rs:3:1
   |
-1 | use ddd_toolkit_core::AggregateRoot;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-error: cannot find attribute `aggregate` in this scope
- --> tests/ui/aggregate_no_domain_event.rs:7:7
-  |
-7 |     #[aggregate(events)]
-  |       ^^^^^^^^^
+3 | struct Event;
+  | ^^^^^^^^^^^^
+  = note: this error originates in the derive macro `AggregateRoot` (in Nightly builds, run with -Z macro-backtrace for more info)

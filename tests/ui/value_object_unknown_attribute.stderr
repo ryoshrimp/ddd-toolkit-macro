@@ -1,17 +1,5 @@
-error: cannot find derive macro `ValueObject` in this scope
- --> tests/ui/value_object_unknown_attribute.rs:3:10
-  |
-3 | #[derive(ValueObject)]
-  |          ^^^^^^^^^^^
-  |
-note: `ValueObject` is imported here, but it is only a trait, without a derive macro
- --> tests/ui/value_object_unknown_attribute.rs:1:5
-  |
-1 | use ddd_toolkit_core::ValueObject;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-error: cannot find attribute `value_object` in this scope
- --> tests/ui/value_object_unknown_attribute.rs:4:3
+error: unknown value_object attribute
+ --> tests/ui/value_object_unknown_attribute.rs:4:16
   |
 4 | #[value_object(unknown)]
-  |   ^^^^^^^^^^^^
+  |                ^^^^^^^
